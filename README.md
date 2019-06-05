@@ -1,4 +1,4 @@
-# My Project Product REST API Codepipeline
+# My Project Product REST API Codepipeline ECS
 
 ## Step 1: Setup CI/CD for Back End Service
 
