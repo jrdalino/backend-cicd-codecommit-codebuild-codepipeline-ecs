@@ -18,10 +18,10 @@ $ vi ~/environment/myproject-product-restapi/aws-cfn/myproject-product-restapi-c
 AWSTemplateFormatVersion: '2010-09-09'
 Description: This stack deploys the IAM Role for CodeBuild and CodePipeline
 Resources:
-  CalculatorServiceCodeBuildServiceRole:
+  MyProjectProductRestapiCodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: CalculatorServiceCodeBuildServiceRole
+      RoleName: MyProjectProductRestapiCodeBuildServiceRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -30,7 +30,7 @@ Resources:
             Service: codebuild.amazonaws.com
           Action: sts:AssumeRole
       Policies:
-      - PolicyName: "CalculatorService-CodeBuildServicePolicy"
+      - PolicyName: "MyProjectProductRestapiCodeBuildServicePolicy"
         PolicyDocument:
           Version: "2012-10-17"
           Statement:
@@ -42,7 +42,7 @@ Resources:
             - "codecommit:Get*"
             - "codecommit:GitPull"
             Resource:
-            - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:CalculatorServiceRepository
+            - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:myproject-product-restapi
           - Effect: "Allow"
             Action:
             - "logs:CreateLogGroup"
@@ -66,10 +66,10 @@ Resources:
             - "ecr:PutImage"
             Resource: "*"
 
-  CalculatorServiceCodePipelineServiceRole:
+  MyProjectProductRestapiCodePipelineServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: CalculatorServiceCodePipelineServiceRole
+      RoleName: MyProjectProductRestapiCodePipelineServiceRole
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
@@ -80,7 +80,7 @@ Resources:
           - sts:AssumeRole
       Path: "/"
       Policies:
-      - PolicyName: CalculatorService-codepipeline-service-policy
+      - PolicyName: MyProjectProductRestapiCodePipelineServicePolicy
         PolicyDocument:
           Statement:
           - Action:
@@ -118,17 +118,18 @@ Resources:
             Resource: "*"
             Effect: Allow
           Version: "2012-10-17"
+
 Outputs:
   CodeBuildRole:
     Description: REPLACE_ME_CODEBUILD_ROLE_ARN
-    Value: !GetAtt 'ModernAppBackendCodeBuildServiceRole.Arn'
+    Value: !GetAtt 'MyProjectProductRestapiCodeBuildServiceRole.Arn'
     Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ModernAppBackendCodeBuildServiceRole' ] ]
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'MyProjectProductRestapiCodeBuildServiceRole' ] ]
   CodePipelineRole:
     Description: REPLACE_ME_CODEPIPELINE_ROLE_ARN
-    Value: !GetAtt 'ModernAppBackendCodePipelineServiceRole.Arn'
+    Value: !GetAtt 'MyProjectProductRestapiCodePipelineServiceRole.Arn'
     Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ModernAppBackendCodePipelineServiceRole' ] ]       
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'MyProjectProductRestapiCodePipelineServiceRole' ] ]       
 ```
 
 ## Step 1.3: Create the Stack
@@ -136,14 +137,14 @@ Outputs:
 $ aws cloudformation create-stack \
 --stack-name eks-calculator-codebuild-codepipeline-iam-role \
 --capabilities CAPABILITY_NAMED_IAM \
---template-body file://~/environment/calculator-backend/aws-cli/eks-calculator-codebuild-codepipeline-iam-role.yaml
+--template-body file://~/environment/myproject-product-restapi/aws-cli/eks-calculator-codebuild-codepipeline-iam-role.yml
 ```
 
 ### Step 1.4: Create S3 Bucket Policy File
 ```
-$ cd ~/environment/myproject-consumer-web
+$ cd ~/environment/myproject-product-restapi
 $ mkdir aws-cli
-$ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
+$ vi ~/environment/myproject-product-restapi/aws-cli/artifacts-bucket-policy.json
 ```
 
 ```
@@ -154,7 +155,7 @@ $ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
         "Effect": "Allow",
         "Principal": {
           "AWS": [
-            "arn:aws:iam::707538076348:role/CalculatorServiceCodeBuildServiceRole",
+            "arn:aws:iam::707538076348:role/MyProjectProductRestapiCodeBuildServiceRole",
             "arn:aws:iam::707538076348:role/CalculatorServiceCodePipelineServiceRole"
           ]
         },
@@ -164,8 +165,8 @@ $ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
           "s3:GetBucketVersioning"
         ],
         "Resource": [
-          "arn:aws:s3:::jrdalino-calculator-backend-artifacts/*",
-          "arn:aws:s3:::jrdalino-calculator-backend-artifacts"
+          "arn:aws:s3:::jrdalino-myproject-product-restapi-artifacts/*",
+          "arn:aws:s3:::jrdalino-myproject-product-restapi-artifacts"
         ]
       },
       {
@@ -173,14 +174,14 @@ $ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
         "Effect": "Allow",
         "Principal": {
           "AWS": [
-            "arn:aws:iam::707538076348:role/CalculatorServiceCodeBuildServiceRole",
+            "arn:aws:iam::707538076348:role/MyProjectProductRestapiCodeBuildServiceRole",
             "arn:aws:iam::707538076348:role/CalculatorServiceCodePipelineServiceRole"
           ]
         },
         "Action": "s3:PutObject",
         "Resource": [
-          "arn:aws:s3:::jrdalino-calculator-backend-artifacts/*",
-          "arn:aws:s3:::jrdalino-calculator-backend-artifacts"
+          "arn:aws:s3:::jrdalino-myproject-product-restapi-artifacts/*",
+          "arn:aws:s3:::jrdalino-myproject-product-restapi-artifacts"
         ]
       }
     ]
@@ -191,13 +192,13 @@ $ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
 ```
 $ aws s3api put-bucket-policy \
 --bucket jrdalino-calculator-backend-artifacts \
---policy file://~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
+--policy file://~/environment/myproject-product-restapi/aws-cli/artifacts-bucket-policy.json
 ```
 
 ### Step 1.6: View/Modify Buildspec file
 ```
-$ cd ~/environment/calculator-backend
-$ vi ~/environment/calculator-backend/buildspec.yml
+$ cd ~/environment/myproject-product-restapi
+$ vi ~/environment/myproject-product-restapi/buildspec.yml
 ```
 
 ```
@@ -225,7 +226,7 @@ artifacts:
 
 ### Step 1.7: View/Modify CodeBuild Project Input File
 ```
-$ vi ~/environment/calculator-backend/aws-cli/code-build-project.json
+$ vi ~/environment/myproject-product-restapi/aws-cli/code-build-project.json
 ```
 
 ```
@@ -254,7 +255,7 @@ $ vi ~/environment/calculator-backend/aws-cli/code-build-project.json
     ],
     "type": "LINUX_CONTAINER"
   },
-  "serviceRole": "arn:aws:iam::707538076348:role/CalculatorServiceCodeBuildServiceRole",
+  "serviceRole": "arn:aws:iam::707538076348:role/MyProjectProductRestapiCodeBuildServiceRole",
   "source": {
     "type": "CODECOMMIT",
     "location": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/calculator-backend"
@@ -265,12 +266,12 @@ $ vi ~/environment/calculator-backend/aws-cli/code-build-project.json
 ### Step 1.8: Create the CodeBuild Project
 ```
 $ aws codebuild create-project \
---cli-input-json file://~/environment/calculator-backend/aws-cli/code-build-project.json
+--cli-input-json file://~/environment/myproject-product-restapi/aws-cli/code-build-project.json
 ```
 
 ### Step 1.9: Create CodePipeline Input File
 ```
-$ vi ~/environment/calculator-backend/aws-cli/code-pipeline.json
+$ vi ~/environment/myproject-product-restapi/aws-cli/code-pipeline.json
 ```
 
 ```
@@ -363,7 +364,7 @@ $ vi ~/environment/calculator-backend/aws-cli/code-pipeline.json
       ],
       "artifactStore": {
         "type": "S3",
-        "location": "jrdalino-calculator-backend-artifacts"
+        "location": "jrdalino-myproject-product-restapi-artifacts"
       }
   }
 }
@@ -372,14 +373,14 @@ $ vi ~/environment/calculator-backend/aws-cli/code-pipeline.json
 ### Step 1.10: Create a pipeline in CodePipeline
 ```
 $ aws codepipeline create-pipeline \
---cli-input-json file://~/environment/calculator-backend/aws-cli/code-pipeline.json
+--cli-input-json file://~/environment/myproject-product-restapi/aws-cli/code-pipeline.json
 ```
 
 ### Step 1.11: Create ECR Policy File and Enable automated Access to the ECR Image Repository
 Replace:
-- REPLACE_ME_CODEBUILD_ROLE_ARN = arn:aws:iam::707538076348:role/CalculatorServiceCodeBuildServiceRole
+- REPLACE_ME_CODEBUILD_ROLE_ARN = arn:aws:iam::707538076348:role/MyProjectProductRestapiCodeBuildServiceRole
 ```
-$ vi ~/environment/calculator-backend/aws-cli/ecr-policy.json
+$ vi ~/environment/myproject-product-restapi/aws-cli/ecr-policy.json
 ```
 
 ```
@@ -410,7 +411,7 @@ $ vi ~/environment/calculator-backend/aws-cli/ecr-policy.json
 ```
 $ aws ecr set-repository-policy \
 --repository-name mythicalmysfits/service \
---policy-text file://~/environment/calculator-backend/aws-cli/ecr-policy.json
+--policy-text file://~/environment/myproject-product-restapi/aws-cli/ecr-policy.json
 ```
 
 ### Step 1.12: Make a small code change, push and validate changes
@@ -418,15 +419,15 @@ $ aws ecr set-repository-policy \
 ### (Optional) Clean up
 ```
 $ aws codepipeline delete-pipeline --name CalculatorBackendServiceCICDPipeline
-$ rm ~/environment/calculator-backend/aws-cli/code-pipeline.json
+$ rm ~/environment/myproject-product-restapi/aws-cli/code-pipeline.json
 $ aws lambda delete-function --function-name LambdaKubeClient
 $ rm ~/environment/lambda-package_v1.zip
 $ aws codebuild delete-project --name CalculatorBackendServiceCodeBuildProject
-$ Manually delete codebuild history
-$ aws s3api delete-bucket-policy --bucket jrdalino-calculator-backend-artifacts
-$ rm ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
-$ aws s3 rm s3://jrdalino-calculator-backend-artifacts --recursive
-$ aws s3 rb s3://jrdalino-calculator-backend-artifacts --force
+Manually delete codebuild history
+$ aws s3api delete-bucket-policy --bucket jrdalino-myproject-product-restapi-artifacts
+$ rm ~/environment/myproject-product-restapi/aws-cli/artifacts-bucket-policy.json
+$ aws s3 rm s3://jrdalino-myproject-product-restapi-artifacts --recursive
+$ aws s3 rb s3://jrdalino-myproject-product-restapi-artifacts --force
 $ aws lambda delete-function --function-name LogsToElasticsearch_kubernetes-logs
 $ aws logs delete-log-group --log-group-name /aws/lambda/LambdaKubeClient
 $ aws logs delete-log-group --log-group-name /aws/codebuild/CalculatorBackendServiceCodeBuildProject
