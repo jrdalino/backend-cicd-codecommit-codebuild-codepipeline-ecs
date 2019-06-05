@@ -1,4 +1,4 @@
-# My Project Product Backend REST API CodePipeline
+# My Project Product Backend REST API Codepipeline
 
 ## Step 1: Setup CI/CD for Back End Service
 
