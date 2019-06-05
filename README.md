@@ -1,22 +1,23 @@
-# Backend CICD using CodeCommit CodeBuild CodePipeline ECS
+# My Project Product Backend REST API CodePipeline
 
 ## Step 1: Setup CI/CD for Back End Service
 
-### Step 1.1: Create Codebuild and Codepipeline Role (eks-calculator-codebuild-codepipeline-iam-role)
+### Step 1.1: Create an S3 Bucket for Pipeline Artifacts
 ```
-$ cd ~/environment/calculator-backend
+$ aws s3 mb s3://jrdalino-myproject-product-restapi-artifacts
+```
+
+### Step 1.2: Create Codebuild and Codepipeline Role using CloudFormation
+```
+$ cd ~/environment/myproject-product-restapi
 $ mkdir aws-cli
-$ vi ~/environment/calculator-backend/aws-cli/eks-calculator-codebuild-codepipeline-iam-role.yaml
+$ vi ~/environment/myproject-product-restapi/aws-cfn/myproject-product-restapi-codepipeline-service-role-stack.yml
 ```
 ```
 ---
 AWSTemplateFormatVersion: '2010-09-09'
+Description: This stack deploys the IAM Role for CodeBuild and CodePipeline
 Resources:
-
-  # An IAM role that allows the AWS CodeBuild service to perform the actions
-  # required to complete a build of our source code retrieved from CodeCommit,
-  # and push the created image to ECR.
-
   CalculatorServiceCodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -64,9 +65,6 @@ Resources:
             - "ecr:BatchCheckLayerAvailability"
             - "ecr:PutImage"
             Resource: "*"
-
-  # An IAM role that allows the AWS CodePipeline service to perform it's
-  # necessary actions. 
 
   CalculatorServiceCodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -120,8 +118,20 @@ Resources:
             Resource: "*"
             Effect: Allow
           Version: "2012-10-17"
+Outputs:
+  CodeBuildRole:
+    Description: REPLACE_ME_CODEBUILD_ROLE_ARN
+    Value: !GetAtt 'ModernAppBackendCodeBuildServiceRole.Arn'
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ModernAppBackendCodeBuildServiceRole' ] ]
+  CodePipelineRole:
+    Description: REPLACE_ME_CODEPIPELINE_ROLE_ARN
+    Value: !GetAtt 'ModernAppBackendCodePipelineServiceRole.Arn'
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ModernAppBackendCodePipelineServiceRole' ] ]       
 ```
 
+## Step 1.3: Create the Stack
 ```
 $ aws cloudformation create-stack \
 --stack-name eks-calculator-codebuild-codepipeline-iam-role \
@@ -129,13 +139,10 @@ $ aws cloudformation create-stack \
 --template-body file://~/environment/calculator-backend/aws-cli/eks-calculator-codebuild-codepipeline-iam-role.yaml
 ```
 
-### Step 1.2: Create an S3 Bucket for Pipeline Artifacts
+### Step 1.4: Create S3 Bucket Policy File
 ```
-$ aws s3 mb s3://jrdalino-calculator-backend-artifacts
-```
-
-### Step 1.3: Modify S3 Bucket Policy
-```
+$ cd ~/environment/myproject-consumer-web
+$ mkdir aws-cli
 $ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
 ```
 
@@ -180,14 +187,14 @@ $ vi ~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
 }
 ```
 
-### Step 1.4: Grant S3 Bucket access to your CI/CD Pipeline
+### Step 1.5: Grant S3 Bucket access to your CI/CD Pipeline
 ```
 $ aws s3api put-bucket-policy \
 --bucket jrdalino-calculator-backend-artifacts \
 --policy file://~/environment/calculator-backend/aws-cli/artifacts-bucket-policy.json
 ```
 
-### Step 1.5: View/Modify Buildspec file
+### Step 1.6: View/Modify Buildspec file
 ```
 $ cd ~/environment/calculator-backend
 $ vi ~/environment/calculator-backend/buildspec.yml
@@ -216,7 +223,7 @@ artifacts:
   files: imagedefinitions.json
 ```
 
-### Step 1.6: View/Modify CodeBuild Project Input File
+### Step 1.7: View/Modify CodeBuild Project Input File
 ```
 $ vi ~/environment/calculator-backend/aws-cli/code-build-project.json
 ```
@@ -255,17 +262,13 @@ $ vi ~/environment/calculator-backend/aws-cli/code-build-project.json
 }
 ```
 
-### Step 1.7: Create the CodeBuild Project
+### Step 1.8: Create the CodeBuild Project
 ```
 $ aws codebuild create-project \
 --cli-input-json file://~/environment/calculator-backend/aws-cli/code-build-project.json
 ```
 
-### Step 1.8:  Modify CodePipeline Input File
-Replace:
-- roleArn = REPLACE_ME_CODEPIPELINE_ROLE_ARN
-- location = REPLACE_ME_ARTIFACTS_BUCKET_NAME
-
+### Step 1.9: Create CodePipeline Input File
 ```
 $ vi ~/environment/calculator-backend/aws-cli/code-pipeline.json
 ```
@@ -366,13 +369,13 @@ $ vi ~/environment/calculator-backend/aws-cli/code-pipeline.json
 }
 ```
 
-### Step 1.13: Create a pipeline in CodePipeline
+### Step 1.10: Create a pipeline in CodePipeline
 ```
 $ aws codepipeline create-pipeline \
 --cli-input-json file://~/environment/calculator-backend/aws-cli/code-pipeline.json
 ```
 
-### Step 1.14: Create ECR Policy File and Enable automated Access to the ECR Image Repository
+### Step 1.11: Create ECR Policy File and Enable automated Access to the ECR Image Repository
 Replace:
 - REPLACE_ME_CODEBUILD_ROLE_ARN = arn:aws:iam::707538076348:role/CalculatorServiceCodeBuildServiceRole
 ```
@@ -410,7 +413,7 @@ $ aws ecr set-repository-policy \
 --policy-text file://~/environment/calculator-backend/aws-cli/ecr-policy.json
 ```
 
-### Step 1.15: Make a small code change, push and validate changes
+### Step 1.12: Make a small code change, push and validate changes
 
 ### (Optional) Clean up
 ```
